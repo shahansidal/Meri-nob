@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#172033">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Meri Notebook">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Meri Notebook</title>
+<style>
+:root{color-scheme:light dark;--bg:#f3f5f8;--panel:#fff;--ink:#1d2736;--muted:#6b7483;--line:#e1e6ed;--accent:#315fbd;--soft:#edf2fc;--danger:#b42318;--shadow:0 8px 30px #15243a0d}
+@media(prefers-color-scheme:dark){:root{--bg:#111722;--panel:#1b2533;--ink:#edf2fa;--muted:#a1adbd;--line:#303d4f;--accent:#91b5ff;--soft:#26354d;--danger:#ff938c;--shadow:0 8px 30px #0003}}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit;color:inherit}button{cursor:pointer}
+.app{min-height:100dvh;display:grid;grid-template-columns:300px minmax(0,1fr);max-width:1400px;margin:auto}
+.sidebar{height:100dvh;position:sticky;top:0;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column}
+.sidehead{padding:22px 18px 14px}.brand{font-size:22px;font-weight:750;letter-spacing:-.5px;margin:0 0 14px}.search{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:11px 13px;outline:none}.search:focus,.field:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.topiclist{list-style:none;padding:4px 10px;margin:0;overflow:auto;flex:1}.topiclist li{margin:3px 0}.topic{display:block;width:100%;border:0;background:transparent;text-align:left;padding:11px 12px;border-radius:11px}.topic.active{background:var(--soft);color:var(--accent);font-weight:650}.topic small{display:block;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.sideactions{padding:12px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:8px}.sideactions .primary{grid-column:1/-1}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 12px;font-weight:600}.btn.primary{background:var(--accent);color:white;border-color:var(--accent)}.btn.danger{color:var(--danger)}.btn:disabled{opacity:.5;cursor:not-allowed}
+main{min-width:0;padding:24px clamp(14px,4vw,54px) 60px}.topbar{max-width:850px;margin:0 auto 18px;display:flex;align-items:center;gap:10px}.topbar .spacer{flex:1}.status{font-size:12px;color:var(--muted)}
+.editor{max-width:850px;margin:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:clamp(18px,4vw,34px);min-height:70vh}
+.title{width:100%;border:0;border-bottom:2px solid var(--line);background:transparent;padding:4px 0 14px;font-size:clamp(25px,4vw,34px);font-weight:750;letter-spacing:-.7px;outline:none}
+.notes{width:100%;min-height:42vh;resize:vertical;border:0;background:transparent;outline:none;padding:20px 0 10px;font-size:17px;line-height:1.8}
+.photos-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:16px;border-top:1px solid var(--line)}.photos-head h2{font-size:15px;margin:0}.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-top:14px}.photo{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--bg);border:1px solid var(--line)}.photo img{width:100%;height:100%;object-fit:cover;display:block}.photo button{position:absolute;right:6px;top:6px;border:0;border-radius:20px;background:#111c;color:white;width:30px;height:30px;font-size:18px}
+.empty{max-width:500px;margin:15vh auto;text-align:center;color:var(--muted);padding:20px}.empty h2{color:var(--ink)}.mobileback{display:none}
+.note{font-size:12px;color:var(--muted);margin-top:12px}
+@media(max-width:720px){.app{display:block}.sidebar{height:100dvh;position:relative;border:0}.workspace{display:none}body.editing .sidebar{display:none}body.editing .workspace{display:block;min-height:100dvh;padding-top:12px}.mobileback{display:inline-block}.editor{min-height:75vh}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+ <div class="sidehead"><h1 class="brand">📒 Meri Notebook</h1><input class="search" id="search" type="search" placeholder="Topic ya notes search karo…" aria-label="Search topics and notes"></div>
+ <ul class="topiclist" id="topicList"></ul>
+ <div class="sideactions">
+  <button class="btn primary" id="addTopic">＋ Naya topic</button>
+  <button class="btn" id="backup">Backup</button><button class="btn" id="restore">Restore</button>
+  <input id="restoreFile" type="file" accept=".json,application/json" hidden>
+ </div>
+</aside>
+<main class="workspace">
+ <div class="topbar"><button class="btn mobileback" id="back">← Topics</button><span class="status" id="status" aria-live="polite">Offline-ready notebook</span><span class="spacer"></span><button class="btn danger" id="deleteTopic" hidden>Delete topic</button></div>
+ <section class="editor" id="editor"><div class="empty"><h2>Your notebook, your topics.</h2><p>Left side se topic select karo ya naya topic banao.</p><p>Notes aur photos automatically save hote hain.</p></div></section>
+</main>
+</div>
+<script>
+(()=> {
+"use strict";
+const DB="meri-notebook-db", VERSION=1, STORE_PAGES="pages", STORE_PHOTOS="photos";
+let db, pages=[], currentId=null, saveTimer=null, photoURLs=[];
+const $=id=>document.getElementById(id);
+const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
+function status(s){$("status").textContent=s}
+function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB,VERSION);req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains(STORE_PAGES))d.createObjectStore(STORE_PAGES,{keyPath:"id"});if(!d.objectStoreNames.contains(STORE_PHOTOS))d.createObjectStore(STORE_PHOTOS,{keyPath:"id"})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+function txDone(tx){return new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}
+async function all(store){return new Promise((resolve,reject)=>{const r=db.transaction(store).objectStore(store).getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function put(store,value){const tx=db.transaction(store,"readwrite");tx.objectStore(store).put(value);await txDone(tx)}
+async function del(store,key){const tx=db.transaction(store,"readwrite");tx.objectStore(store).delete(key);await txDone(tx)}
+async function deletePageData(id){const tx=db.transaction([STORE_PAGES,STORE_PHOTOS],"readwrite");tx.objectStore(STORE_PAGES).delete(id);const req=tx.objectStore(STORE_PHOTOS).getAll();req.onsuccess=()=>req.result.filter(x=>x.pageId===id).forEach(x=>tx.objectStore(STORE_PHOTOS).delete(x.id));await txDone(tx)}
+async function refresh(){pages=(await all(STORE_PAGES)).sort((a,b)=>b.updated-a.updated);renderList()}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function renderList(){const q=$("search").value.trim().toLocaleLowerCase();const list=$("topicList");list.replaceChildren();const found=pages.filter(p=>(p.title+" "+p.body).toLocaleLowerCase().includes(q));if(!found.length){const li=document.createElement("li");li.className="empty";li.textContent=pages.length?"Koi matching topic nahi mila.":"Abhi koi topic nahi hai.";list.append(li);return}for(const p of found){const li=document.createElement("li"),b=document.createElement("button"),sm=document.createElement("small");b.className="topic"+(p.id===currentId?" active":"");b.textContent=p.title||"Bina title";sm.textContent=(p.body||"").replace(/\s+/g," ").slice(0,65);b.append(sm);b.onclick=()=>openPage(p.id);li.append(b);list.append(li)}}
+function clearURLs(){photoURLs.forEach(URL.revokeObjectURL);photoURLs=[]}
+async function renderEditor(){clearURLs();const p=pages.find(x=>x.id===currentId);const root=$("editor");root.replaceChildren();$("deleteTopic").hidden=!p;if(!p){root.innerHTML='<div class="empty"><h2>Your notebook, your topics.</h2><p>Left side se topic select karo ya naya topic banao.</p></div>';return}
+const title=document.createElement("input");title.className="title";title.placeholder="Topic ka naam";title.value=p.title||"";title.setAttribute("aria-label","Topic title");
+const body=document.createElement("textarea");body.className="notes";body.placeholder="Yahan apne notes likho…";body.value=p.body||"";body.setAttribute("aria-label","Notes");
+const ph=document.createElement("div");ph.className="photos-head";const h=document.createElement("h2");h.textContent="Photos";const add=document.createElement("button");add.className="btn";add.textContent="＋ Photos add karo";const input=document.createElement("input");input.type="file";input.accept="image/*";input.multiple=true;input.hidden=true;add.onclick=()=>input.click();ph.append(h,add);
+const photos=document.createElement("div");photos.className="photos";
+root.append(title,body,ph,photos,input);
+async function drawPhotos(){photos.replaceChildren();const items=(await all(STORE_PHOTOS)).filter(x=>x.pageId===p.id);for(const item of items){const wrap=document.createElement("div");wrap.className="photo";const img=document.createElement("img");const url=URL.createObjectURL(item.blob);photoURLs.push(url);img.src=url;img.alt=item.name||"Notebook photo";const rm=document.createElement("button");rm.type="button";rm.textContent="×";rm.setAttribute("aria-label","Delete photo");rm.onclick=async()=>{if(!confirm("Ye photo delete karni hai?"))return;await del(STORE_PHOTOS,item.id);await drawPhotos();status("Photo delete ho gayi")};wrap.append(img,rm);photos.append(wrap)}}
+async function persist(){p.title=title.value;p.body=body.value;p.updated=Date.now();await put(STORE_PAGES,p);await refresh();status("Saved ✓")}
+function schedule(){status("Saving…");clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist().catch(e=>status("Save error: "+e.message)),350)}
+title.addEventListener("input",schedule);body.addEventListener("input",schedule);
+input.onchange=async()=>{const files=[...input.files];for(const file of files){if(!file.type.startsWith("image/"))continue;const photo={id:uid(),pageId:p.id,name:file.name,blob:file,created:Date.now()};await put(STORE_PHOTOS,photo)}input.value="";await drawPhotos();status("Photo(s) saved ✓")};
+await drawPhotos();status("Saved locally on this iPhone");
+}
+async function openPage(id){if(saveTimer){clearTimeout(saveTimer);saveTimer=null;await persist()}currentId=id;document.body.classList.add("editing");renderList();await renderEditor()}
+$("addTopic").onclick=async()=>{const p={id:uid(),title:"",body:"",updated:Date.now()};await put(STORE_PAGES,p);await refresh();await openPage(p.id);$("editor").querySelector(".title").focus()};
+$("deleteTopic").onclick=async()=>{if(!currentId||!confirm("Topic aur uski saari photos delete kar dein?"))return;await deletePageData(currentId);currentId=null;await refresh();await renderEditor();status("Topic deleted")};
+$("back").onclick=async()=>{if(saveTimer){clearTimeout(saveTimer);saveTimer=null;await persist()}document.body.classList.remove("editing");clearURLs()};
+$("search").oninput=renderList;
+$("backup").onclick=async()=>{try{if(saveTimer){clearTimeout(saveTimer);saveTimer=null;await persist()}const ps=await all(STORE_PAGES),ph=await all(STORE_PHOTOS);const encoded=[];for(const x of ph){const data=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(x.blob)});encoded.push({id:x.id,pageId:x.pageId,name:x.name,created:x.created,data})}const payload={format:"meri-notebook-backup",version:1,created:new Date().toISOString(),pages:ps,photos:encoded};const blob=new Blob([JSON.stringify(payload)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="meri-notebook-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);status("Backup file ready — Files mein save karo")}catch(e){alert("Backup nahi ban paya: "+e.message)}};
+$("restore").onclick=()=>$("restoreFile").click();
+$("restoreFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(data.format!=="meri-notebook-backup"||!Array.isArray(data.pages)||!Array.isArray(data.photos))throw Error("Invalid backup");if(!confirm("Restore current notebook ko backup se replace karega. Current data pehle backup kar lo. Continue?"))return;const decoded=[];for(const x of data.photos){const blob=await (await fetch(x.data)).blob();decoded.push({id:x.id,pageId:x.pageId,name:x.name,created:x.created,blob})}const tx=db.transaction([STORE_PAGES,STORE_PHOTOS],"readwrite");tx.objectStore(STORE_PAGES).clear();tx.objectStore(STORE_PHOTOS).clear();data.pages.forEach(p=>tx.objectStore(STORE_PAGES).put(p));decoded.forEach(x=>tx.objectStore(STORE_PHOTOS).put(x));await txDone(tx);currentId=null;await refresh();await renderEditor();status("Restore complete ✓")}catch(err){alert("Restore failed: "+err.message)}finally{e.target.value=""}};
+async function init(){try{db=await openDB();await refresh();if(navigator.storage&&navigator.storage.persist){try{const granted=await navigator.storage.persist();status(granted?"Offline storage protected where supported":"Local storage ready — regular backups recommended")}catch{}}if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});}catch(e){$("editor").innerHTML='<div class="empty"><h2>Storage start nahi ho paya</h2><p>Safari mein website ko normal HTTPS address se open karo. Private Browsing use mat karo.</p></div>';status("Storage error")}}
+init();
+})();
+</script>
+</body></html>
